@@ -44,13 +44,11 @@ export interface FormProps {
  */
 export const Form: React.FunctionComponent<FormProps> = (props) => {
     const { formErrors, formFields, onChange, values } = props
-    const [formValues, setFormValues] = React.useState<FormValues>({})
-
+    const preValuesRef = React.useRef<FormValues>()
+    
     React.useEffect(() => {
-        setFormValues(values)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-
+        preValuesRef.current = values
+    }, [values])
 
     const errorAlerts = React.useMemo(() => {
         if (!formErrors || !formErrors.non_field_errors) {
@@ -61,34 +59,23 @@ export const Form: React.FunctionComponent<FormProps> = (props) => {
         }
         return <ErrorAlert errors={formErrors.non_field_errors} />
     }, [formErrors])
-
-    const formInputs = React.useMemo(
-        () =>
-            formFields.map((formField) => (
+    
+    return (
+        <Stack spacing={2} data-testid={'form'}>
+            {errorAlerts}
+            {formFields.map((formField) => (
                 <FormField
                     key={formField.key}
                     formField={formField}
-                    value={formValues[formField.key] ?? ''}
-                    onChange={(value: FormValue) =>
-                        setFormValues((prevState) => {
-                            onChange({ ...prevState, [formField.key]: value })
-                            return { ...prevState, [formField.key]: value }
-                        })
-                    }
+                    value={values[formField.key] ?? ''}
+                    onChange={(value: FormValue) => onChange({ ...preValuesRef.current, [formField.key]: value })}
                     fieldErrors={
                         formErrors && typeof formErrors[formField.key] !== 'undefined'
                             ? formErrors[formField.key]
                             : undefined
                     }
                 />
-            )),
-        [formFields, formValues, formErrors, onChange]
-    )
-
-    return (
-        <Stack spacing={2} data-testid={'form'}>
-            {errorAlerts}
-            {formInputs}
+            ))}
         </Stack>
     )
 }
